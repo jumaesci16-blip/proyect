@@ -1,1 +1,524 @@
-# web
+**# web**<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Entorno VR Combinado - Modo VR</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  
+</head>
+<body>
+  <a-scene>
+    
+    <!-- Componentes personalizados -->
+    <script>
+      // Cambiar color al pasar el puntero
+      AFRAME.registerComponent('toggle-color-on-hover', {
+        schema: { hoverColor: { type: 'color', default: '#00FF00' } },
+        init: function () {
+          const el = this.el;
+          this.originalColor = el.getAttribute('material')?.color || el.getAttribute('color');
+          this.isOriginal = true;
+          el.addEventListener('mouseenter', () => {
+            if (this.isOriginal) {
+              if (el.getAttribute('material')) el.setAttribute('material', 'color', this.data.hoverColor);
+              else el.setAttribute('color', this.data.hoverColor);
+              this.isOriginal = false;
+            } else {
+              if (el.getAttribute('material')) el.setAttribute('material', 'color', this.originalColor);
+              else el.setAttribute('color', this.originalColor);
+              this.isOriginal = true;
+            }
+          });
+        }
+      });
+
+      AFRAME.registerComponent('hide-on-hover', {
+        init: function () {
+          const el = this.el;
+          el.addEventListener('mouseenter', () => {
+            el.setAttribute('visible', false);
+          });
+          el.addEventListener('mouseleave', () => {
+            el.setAttribute('visible', true);
+          });
+        }
+      });
+
+      // Ocultar/mostrar objetos al pasar el puntero, con efecto de desaparición prolongado
+      AFRAME.registerComponent('hide-objects-on-hover', {
+        schema: {
+          targetSelector: { type: 'string', default: '.disappear-object' },
+          cooldown: { type: 'number', default: 4000 }
+        },
+        init: function () {
+          this.targets = document.querySelectorAll(this.data.targetSelector);
+          this.lastAction = 0;
+          this.isHidden = false;
+
+          this.fadeElements = (fadeOut) => {
+            this.targets.forEach(el => {
+              if (fadeOut) {
+                el.setAttribute('animation__fade', {
+                  property: 'material.opacity',
+                  to: 0,
+                  dur: 3500,
+                  easing: 'linear',
+                  startEvents: 'fadeOut'
+                });
+                el.emit('fadeOut');
+                setTimeout(() => el.setAttribute('visible', 'false'), 3500);
+              } else {
+                el.setAttribute('visible', 'true');
+                el.setAttribute('material', 'opacity', 0);
+                el.setAttribute('animation__fade', {
+                  property: 'material.opacity',
+                  to: 1,
+                  dur: 3500,
+                  easing: 'linear',
+                  startEvents: 'fadeIn'
+                });
+                el.emit('fadeIn');
+              }
+            });
+          };
+
+          this.el.addEventListener('mouseenter', () => {
+            const now = Date.now();
+            if (now - this.lastAction < this.data.cooldown) return;
+            this.lastAction = now;
+            if (!this.isHidden) {
+              this.isHidden = true;
+              this.fadeElements(true);
+            }
+          });
+
+          this.el.addEventListener('mouseleave', () => {
+            if (this.isHidden) {
+              this.isHidden = false;
+              this.fadeElements(false);
+            }
+          });
+        }
+      });
+
+      // Cambiar entorno al pasar el cursor por botones
+      AFRAME.registerComponent('entorno-switch', {
+        schema: {
+          target: { type: 'string' },
+          skyColor: { type: 'string', default: '#000000' }
+        },
+        init: function () {
+          this.el.addEventListener('mouseenter', () => {
+            const entornos = ['entorno1', 'entorno2', 'entorno3'];
+            entornos.forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.setAttribute('visible', id === this.data.target);
+            });
+            const sky = document.querySelector('#dynamic-sky');
+            sky.setAttribute('color', this.data.skyColor);
+          });
+        }
+      });
+      
+      AFRAME.registerComponent('toggle-color-on-hover', {
+        schema: {
+          hoverColor: {type: 'color', default: '#00FF00'}
+        },
+        init: function () {
+          const el = this.el;
+          this.originalColor = el.getAttribute('material')?.color || el.getAttribute('color') || '#FFFFFF';
+          this.isOriginal = true;
+          el.addEventListener('mouseenter', () => {
+            if (this.isOriginal) {
+              el.setAttribute('material', {color: this.data.hoverColor});
+              this.isOriginal = false;
+            } else {
+              el.setAttribute('material', {color: this.originalColor});
+              this.isOriginal = true;
+            }
+          });
+        }
+      });
+
+
+
+    
+    </script>
+
+    <!-- Cielo dinámico -->
+    <a-sky id="dynamic-sky" color="#000022"></a-sky>
+
+    
+
+    <a-cylinder  
+  position="0 -10 0" 
+  radius="8" 
+  height="0.4" 
+  color="#34495e"
+  material="roughness: 0.6; metalness: 0.4"
+  animation="property: rotation; to: 360 0 0; loop: true; dur: 0"
+  animation__2="property: position; to: 0 -10 0; dir: alternate; loop: true; dur: 0">
+</a-cylinder>
+
+<a-entity camera look-controls position="0 1.6 0" wasd-controls>
+  <a-cursor fuse="false" 
+            material="color: white; shader: flat" 
+            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02">
+  </a-cursor>
+</a-entity>
+
+</a-entity>
+    
+     <a-entity id="entorno1" visible="true">
+      <!-- Luces -->
+    <a-light type="ambient" color="#FFFFFF" intensity="0.7"></a-light>
+    <a-light type="directional" position="0 0 0" intensity="5"></a-light>
+     <a-entity geometry="primitive: sphere; radius: 100; detail: 10"  scale="4 4 4" material="color: #1D737A ; wireframe: true" position="0 0 0"  ></a-entity>
+     <a-entity geometry="primitive: triangle; vertexA: 0 0 0; vertexB: 1 0 0; vertexC: 0.5 0.866 0" material="color: #000000; wireframe: true; side: double" scale="4 4 4" position="-4.5 0 -10"></a-entity>   
+     <a-entity geometry="primitive: triangle; vertexA: 0.5 0 0; vertexB: 1 0 0; vertexC: 0.5 0.866 0" material="color: #000000; wireframe: true; side: double" rotation="0 0 90" scale="4 4 4" position="4.5 -0.7 -10"></a-entity>  
+     <a-text value="¿Que es el teorema de pitagoras?" position="0 7 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-entity id="raiz-3d" position="4.5 -2 12" rotation="0 -180 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"> </a-box>
+     <a-box width="5" height="0.1" depth="0.1" color="#000000" position="2.3 1 0"> </a-box>
+     </a-entity>
+     <a-entity id="raiz-3d" position="2 2 12" rotation="0 -180 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"></a-box>
+     <a-box width="2.5" height="0.1" depth="0.1" color="#000000" position="1.25 1 0"></a-box>
+     </a-entity>
+     <a-entity id="raiz-3d" position="-2.2 -2 12" rotation="0 -180 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"></a-box>
+     <a-box width="2.5" height="0.1" depth="0.1" color="#000000" position="1.25 1 0"></a-box>
+     </a-entity> //las tres de arriba de ecuacciones
+     <a-text value="25 = 5" rotation="0 -180 0" position="0 2 12" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-text value="3 + 4      =      5" rotation="0 -180 0" position="0 -2.5 12" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-text value="2         2" rotation="0 -180 0" position="1.6 -1.8 12" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="2" rotation="0 -180 0" position="-3.8 -1.8 12" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="Despues de elevar los catetos y sumarlos se consigue la elevacion de la hipotenusa." rotation="0 90 0" position="-70 -30 0" color="#FFFFFF" scale="15 15 15" align="center"></a-text>
+
+     <a-entity  id="raiz-ecuaciones" position="-50 -15 0"  rotation="0 90 0" scale="3 3 3">
+     <a-text value="El resultado final y la formula completa seria:" rotation="0 -180 0" position="0 0 12" color="#000000" scale="2.5 2.5 2.5" align="center"></a-text><a-text value="a   +   b" rotation="0 0 0" position="-2.5 22.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-text value="=" rotation="0 0 0" position="1.1 22.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-entity id="raiz-3d"  position="-4.5 23 -17.9" rotation="0 0 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"> </a-box>
+     <a-box width="5" height="0.1" depth="0.1" color="#000000" position="2.3 1 0"> </a-box>
+     </a-entity>
+     <a-text value="c   -   b" rotation="0 0 0" position="-2.5 19.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-text value="=" rotation="0 0 0" position="1.1 19.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-entity id="raiz-3d"  position="-4.5 20 -17.9" rotation="0 0 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"> </a-box>
+     <a-box width="5" height="0.1" depth="0.1" color="#000000" position="2.3 1 0"> </a-box>
+     </a-entity>
+     <a-text value="c   -   a" rotation="0 0 0" position="-2.5 16.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-text value="=" rotation="0 0 0" position="1.1 16.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-entity id="raiz-3d"  position="-4.5 17 -17.9" rotation="0 0 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"> </a-box>
+     <a-box width="5" height="0.1" depth="0.1" color="#000000" position="2.3 1 0"> </a-box>
+     </a-entity> //las tres de arriba enanas
+     <a-entity id="raiz-3d" position="2.5 23 -17.9" rotation="0 0 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"></a-box>
+     <a-box width="2.5" height="0.1" depth="0.1" color="#000000" position="1.25 1 0"></a-box>
+     </a-entity>
+     <a-entity id="raiz-3d" position="2.5 20 -17.9" rotation="0 0 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"></a-box>
+     <a-box width="2.5" height="0.1" depth="0.1" color="#000000" position="1.25 1 0"></a-box>
+     </a-entity>
+     <a-entity id="raiz-3d" position="2.5 17 -17.9" rotation="0 0 0" scale="1 1 1">
+     <a-box width="0.1" height="1.2" depth="0.1" color="#000000" position="-0.25 -0.2 0" rotation="0 0 20"></a-box>
+     <a-box width="0.1" height="1.7" depth="0.1" color="#000000" position="0 0.2 0"></a-box>
+     <a-box width="2.5" height="0.1" depth="0.1" color="#000000" position="1.25 1 0"></a-box>
+     </a-entity> 
+     <a-text value="Formulas" rotation="20 0 0" position="0 28 -17.9" color="#FFFFFF" scale="7 7 7" align="center"></a-text>
+     <a-text value="2" rotation="0 0 0" position="4 23 -17.9" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="2" rotation="0 0 0" position="4 20 -17.9" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="2" rotation="0 0 0" position="4 17 -17.9" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="2            2" rotation="0 0 0" position="-2 23 -17.9" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="2            2" rotation="0 0 0" position="-2 20 -17.9" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="2            2" rotation="0 0 0" position="-2 17 -17.9" color="#000000" scale="3 3 3" align="center"></a-text>
+     <a-text value="c" rotation="0 0 0" position="3.5 22.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-text value="a" rotation="0 0 0" position="3.5 19.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-text value="b" rotation="0 0 0" position="3.5 16.5 -17.9" color="#000000" scale="5 5 5" align="center"></a-text>
+     <a-plane class="triangle-plane" rotation="0 0 0" width="15" height="10" color="#FFFFFF" position="0 20 -18" scale="1 1 1" ></a-plane>
+    </a-entity>
+
+     <a-text value="!La mayoria de cuerpos geometricos contienen triaángulos rectangulos que no son visibles como la esfera, que esta en el entorno." rotation="0 -90 0" position="70 30 0" color="#FFFFFF" scale="15 15 15" align="center"></a-text>
+     <a-text value="El teorema aplica solo a triaángulos rectáangulos (con un  áangulo de 90° grados ), donde el lado maás largo se llama hipotenusa y los dos lados máas cortos se llaman catetos." position="0 5.5 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Despues de conseguir la elevacion de la hipotenusa se tiene que sacar la raiz de esta para dar el resultado final." position="0 4.5 12" rotation="0 -180 0" color="#000000" scale="2.5 2.5 2.5" align="center"></a-text>
+     <a-text value="Cambia de color los cuadros de los lados mostrando cual es la hipotenusa." position="0 -1.7 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Cateto" position="6.2 2.2 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Cateto" position="3 0.8 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="3 cm" position="6.1 2.7 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="4 cm" position="4.4 0.8 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Cateto" position="-4.2 -0.7 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Cateto" position="-1.8 -0.7 -12" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Hipotenusa" position="2.7 2.7 -12" rotation="0 0 30" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Hipotenusa" position="-1.5 2.2 -12" rotation="0 0 -60" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="? cm" position="4.4 3.6 -12" rotation="0 0 30" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-text value="Hipotenusa" position="-4.6 2.2 -12" rotation="0 0 60" color="#000000" scale="2 2 2" align="center"></a-text>
+     <a-entity geometry="primitive: triangle; vertexA: 0.5  0 0; vertexB: 1 0 0; vertexC: 0.5 0.866 0" material="color: #000000; wireframe: true; side: double" scale="4 4 4" position="-4.5 0 -10"></a-entity>
+     <a-plane class="triangle-plane" rotation="0 0 0" width="30" height="19.2" color="#FFFFFF" position="0 2 -18" scale="1 1 1" ></a-plane>
+     <a-plane class="triangle-plane" rotation="0 180 0" width="30" height="19.2" color="#FFFFFF" position="0 0 18" scale="0.75 1 0.5" ></a-plane>
+     
+     <a-plane class="triangle-plane" rotation="180 90 0" width="12" height="12" color="#FFFFFF" position="60 -14 0" scale="1 1 5" toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="180 90 0" width="15" height="15" color="#FFFFFF" position="60 -0.5 -13.5" scale="1 1 1" toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="180 90 38.6" width="19.2" height="19.2" color="#FFFFFF" position="60 5.5 7.5" scale="1 1 1" toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-entity geometry="primitive: triangle; vertexA: 0 2.4 0; vertexB: 3 0 0; vertexC: 0 0 0" rotation="0 90 90" scale="5 5 5" material="color: #FF0000" position="60 -8 -6" toggle-geometry-on-hover="altGeometry: box; altColor: #00FF00"></a-entity>
+     <a-text value="A" rotation="0 -90 0" position="61 -13.5 0" color="#FFFFFF" scale="20 20 20" align="center"></a-text>
+     <a-text value="2" rotation="0 -90 0" position="61 -12 2" color="#FFFFFF" scale="10 10 10" align="center"></a-text>
+     <a-text value="B" rotation="0 -90 0" position="61 -1.5 -13.5" color="#FFFFFF" scale="20 20 20" align="center"></a-text>
+     <a-text value="2" rotation="0 -90 0" position="61 1.5 -11" color="#FFFFFF" scale="10 10 10" align="center"></a-text>
+     <a-text value="Hipotenusa" position="1 14 7.5" rotation="0 -90 0" color="#FFFFFF" scale="9 9 9" align="center"></a-text>
+     <a-text value="C" rotation="0 -90 0" position="61 5.5 7.5" color="#FFFFFF" scale="20 20 20" align="center"></a-text>
+     <a-text value="2" rotation="0 -90 0" position="61 7.5 10" color="#FFFFFF" scale="10 10 10" align="center"></a-text>
+     
+     <a-entity geometry="primitive: box; width: 5; height: 5; depth: 5; detail: 8" material="color: #4CC3D9; wireframe: true" position="20 5 20" animation="property: position; to: 20 -5 20; dir: alternate; dur: 2000; loop: true" ></a-entity>
+     <a-entity geometry="primitive: box; width: 5; height: 5; depth: 5; detail: 8" material="color: #EF476F; wireframe: true" position="0 20 20" animation="property: rotation; to: 360 360 0; loop: true; dur: 5000" ></a-entity>
+     <a-entity geometry="primitive: box; width: 2; height: 2; depth: 2; detail: 8" material="color: #06D6A0; wireframe: true" position="-17 0 20" animation="property: scale; to: 4 4 4; dir: alternate; loop: true; dur: 3000" ></a-entity>
+     <a-entity geometry="primitive: triangle; vertexA: 0 0 0; vertexB: 3 0 0; vertexC: 0 0 2.4" rotation="-51.4 0 90" scale="5 5 5" material="color: #FF0000" position="-70 -14.99 -17.89" toggle-geometry-on-hover="altGeometry: box; altColor: #00FF00" ></a-entity>
+     <a-entity geometry="primitive: triangle; vertexA: 0 0 0; vertexB: 3 0 0; vertexC: 0 0 2.4" rotation="180 0 90" scale="5 5 5" material="color: #FF0000" position="-70 -2.02 6" toggle-geometry-on-hover="altGeometry: box; altColor: #00FF00" ></a-entity>
+     <a-entity geometry="primitive: triangle; vertexA: 0 0 0; vertexB: 3 0 0; vertexC: 0 0 2.4" rotation="90 0 90" scale="5 5 5" material="color: #FF0000" position="-70 -3.53 12.49" toggle-geometry-on-hover="altGeometry: box; altColor: #00FF00" ></a-entity>
+     <a-plane class="triangle-plane" rotation="0 90 0" width="12" height="12" color="#FFFFFF" position="-70 4 0" scale="1 1 4" toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="0 90 0" width="15" height="15" color="#FFFFFF" position="-70 4 20" scale="1 1 4" toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="0 90 0" width="19.2" height="19.2" color="#FFFFFF" position="-70 4 -20" scale="1 1 4" toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-text value="=" rotation="0 90 0" position="-70 4 -8" color="#FFFFFF" scale="13 13 13" align="center" ></a-text>  
+     <a-text value="+" rotation="0 90 0" position="-70 $ 9" color="#FFFFFF" scale="13 13 13" align="center" ></a-text>  
+     <a-text value="16" position="-71 4 20" rotation="0 -270 0" color="#FFFFFF" scale="20 20 20" align="center"></a-text>
+     <a-text value="9" position="-71 4 0" rotation="0 -270 0" color="#FFFFFF" scale="20 20 20" align="center"></a-text>
+     <a-text value="25" position="-71 4 -20" rotation="0 -270 0" color="#FFFFFF" scale="20 20 20" align="center"></a-text>
+     <a-text value="Hipotenusa" position="-71 9 -20" rotation="0 -270 0" color="#FFFFFF" scale="9 9 9" align="center"></a-text>
+
+    </a-entity>
+     <a-entity id="sistema-estelar" position="0 0 0"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 60000; easing: linear">
+  </a-entity>
+
+  <script>
+    const sistemaEstelar = document.getElementById('sistema-estelar');
+    for (let i = 0; i < 1000; i++) {
+      const estrella = document.createElement('a-sphere');
+      const distancia = Math.random() * 250 + 100;
+      const theta = Math.random() * 2 * Math.PI;
+      const phi = Math.random() * Math.PI;
+      const x = distancia * Math.sin(phi) * Math.cos(theta);
+      const y = distancia * Math.sin(phi) * Math.sin(theta);
+      const z = distancia * Math.cos(phi);
+      estrella.setAttribute('position', `${x} ${y} ${z}`);
+      estrella.setAttribute('radius', Math.random() * 1.5 + 0.2);
+      estrella.setAttribute('color', '#FFFFFF');
+      estrella.setAttribute('material', 'emissive: #FFFFFF; emissiveIntensity: 1; opacity: 0.09; transparent: true');
+      sistemaEstelar.appendChild(estrella);
+    }
+  </script>
+        </a-entity>
+
+    <!-- ENTORNO 3 -->
+    <a-entity id="entorno2" visible="false"> 
+      <!-- Luces -->
+    <a-light type="ambient" color="#FFFFFF" intensity="0.7"></a-light>
+    <a-light type="directional" position="0 0 0" intensity="5"></a-light>
+      <a-torus-knot position="-5 1 7" radius="2" radius-tubular="0.2" color="#33FFCC"></a-torus-knot>
+      <a-cone position="3 1.5 6" radius-bottom="2" height="6" color="#33FFCC"></a-cone>
+      <a-entity
+        position="-5 1 7"
+        geometry="primitive: torusKnot; radius:2; radiusTubular: 0.3; p: 2 q: 3"
+        material="color: #0066FF; wireframe: true"
+      ></a-entity>
+      <a-entity
+        geometry="primitive: cone; radius-bottom:2; height:6; detail:1"
+        material="color: #FFFFFF; wireframe: true"
+        position="3 1.5 6"
+      ></a-entity>
+                <!-- Entidad con geometría tipo torus knot -->
+      <a-entity
+        position="0 15 -40"
+        geometry="primitive: torusKnot; radius:15; radiusTubular: 1; p: 4 q: 3"
+        material="color: #0066FF; wireframe: true"
+      ></a-entity>
+      <a-entity
+        position="0 15 -40"
+        geometry="primitive: torusKnot; radius:15; radiusTubular: 0.5; p: 4 q: 3"
+        material="color: #33FFCC"
+      ></a-entity>
+      <a-entity
+        geometry="primitive: icosahedron; radius: 100; detail: 25"
+        material="color: #FFFFFF; wireframe: true"
+        position="0 0 0"
+      ></a-entity>
+      <a-plane class="triangle-plane" rotation="0 -90 0" width="80" height="40" color="#FFFFFF" position="71 11 0" scale="1 1 1" ></a-plane>
+      <a-plane class="triangle-plane" rotation="0 90 0" width="80" height="40" color="#FFFFFF" position="-71 11 0" scale="1 1 1" ></a-plane>
+      <a-plane class="triangle-plane" rotation="180 -90 0" width="2" height="2" color="#FF2A00" position="-50 11.5 -21" scale="1.2 1.2 1.2"  toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover ></a-plane>
+     <a-plane class="triangle-plane" rotation="180 -90 0" width="2" height="2" color="#FF2A00" position="-50 6 -21" scale="1.2 1.2 1.2"  toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="180 -90 0" width="2" height="2" color="#FF2A00" position="-50 0.5 -21" scale="1.2 1.2 1.2"  toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="0 -90 0" position="50 6.3 4" width="1.5" height="1.5" color="#FF2A00"  scale="1.2 1.2 1.2"  toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="0 -90 0" position="50 3.3 4" width="1.5" height="1.5" color="#FF2A00"  scale="1.2 1.2 1.2"  toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="0 -90 0" position="50 0.3 4" width="1.5" height="1.5" color="#FF2A00"  scale="1.2 1.2 1.2"  toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-plane class="triangle-plane" rotation="0 -90 0" position="50 -2.7 4" width="1.5" height="1.5" color="#FF2A00"  scale="1.2 1.2 1.2"  toggle-color-on-hover="hoverColor: #00FF00" hide-on-hover></a-plane>
+     <a-text value="Si la hipotenusa de un triáangulo rectáangulo mide 13 cm y un cateto mide 5 cm. ¿cuáal es la longitud del otro cateto?" rotation="0 -90 0" position="70 16 0" color="#000000" scale="13 13 13" align="center" ></a-text> 
+     <a-text value="a) 12 cm" rotation="0 -90 0" position="70 8 -3" color="#000000" scale="13 13 13" align="center" ></a-text> 
+     <a-text value="b) 10 cm" rotation="0 -90 0" position="70 4 -3" color="#000000" scale="13 13 13" align="center" ></a-text>
+     <a-text value="c)   8 cm" rotation="0 -90 0" position="70 0 -3" color="#000000" scale="13 13 13" align="center" ></a-text> 
+     <a-text value="d) 15 cm" rotation="0 -90 0" position="70 -4 -3" color="#000000" scale="13 13 13" align="center" ></a-text> 
+     <a-text value="Preguntas" rotation="10 -90 0" position="70 24 0" color="#000000" scale="13 13 13" align="center"  ></a-text> 
+     <a-text value="Preguntas de Verdadero o Falso" rotation="10 90 0" position="-70 24 0" color="#000000" scale="11 11 11" align="center" ></a-text> 
+     <a-text value="El Teorema de Pitáagoras sirve para cualquier tipo de triaángulo. (V/F)" rotation="0 90 0" position="-70 16 5" color="#000000" scale="12 12 12" align="center" ></a-text> 
+     <a-text value="Si un triaángulo tiene lados de 7, 8 y 10, es un triaángulo rectáangulo. (V/F)" rotation="0 90 0" position="-70 8 5" color="#000000" scale="12 12 12" align="center" ></a-text> 
+     <a-text value="En la foórmula a^2² + b^2² = c^2², la letra 'c' siempre representa la hipotenusa. (V/F)" rotation="0 90 0" position="-70 0 5" color="#000000" scale="12 12 12" align="center" ></a-text> 
+    </a-entity>
+
+    <!-- ENTORNO 2 -->
+    <a-entity id="entorno3" visible="false">
+      <!-- Luces -->
+    <a-light type="ambient" color="#FFFFFF" intensity="0.7"></a-light>
+    <a-light type="directional" position="0 0 0" intensity="5"></a-light>
+      <a-text value="¿Para que sirve el teorema de pitagoras en el mundo ?!¡" position="0 6 -12" color="#FFFFFF" scale="4 4 4" align="center"></a-text>
+      <a-dodecahedron position="-20 5 10" radius="4" color="#FFFFFF" geometry="primitive: dodecahedron; radius: 2; detail: 1" opacity="1"
+                      animation="property: rotation; to: 0 360 360; loop: true; dur: 8000"></a-dodecahedron>
+      <a-entity
+        geometry="primitive: icosahedron; radius: 4; detail: 1"
+        material="color: #FFFFFF; wireframe: true"
+        position="-20 5 10"
+        animation="property: rotation; to: 0 360 360; loop: true; dur: 8000"
+      ></a-entity>
+      <a-box position="20 5 10" color="#888888" width="4" height="4" depth="4" opacity="0.1"
+             animation="property: position; to: 20 -5 10; dir: alternate; dur: 2000; loop: true"></a-box>
+      <a-entity
+        geometry="primitive: box; width: 3; height: 3; depth: 3; detail: 100"
+        material="color: #FFFFFF; wireframe: true"
+        position="20 5 10"
+        animation="property: position; to: 20 -5 10; dir: alternate; dur: 2000; loop: true"
+      ></a-entity>
+      <a-entity
+      radius-tubular="'0.1"
+        geometry="primitive: torus; radius: 4; detail: 0.1"
+        material="color: #FFFFFF; wireframe: true"
+        position="0 10 0"
+        rotation="90 0 90"
+      ></a-entity>
+      <a-text value="El Teorema de Pitáagoras es esencial en el mundo porque permite calcular distancias y aángulos con precisioón, siendo la base de la construccióon, la navegacioón y la tecnologiía moderna." rotation="0 180 0" position="0 3 20" color="#FFFFFF" scale="4 4 4" align="center" ></a-text> 
+      <a-entity id="mini-pagoda" scale="0.2 0.2 0.2" position="-10 -3 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000">
+        <a-box width="16" height="5" depth="12" color="#aab7b8" position="0 2.5 0"></a-box>
+        <a-cylinder height="8" radius="1.3" color="#95a5a6" position="-7 4 5"></a-cylinder>
+        <a-cylinder height="8" radius="1.3" color="#95a5a6" position="7 4 -5"></a-cylinder>
+        <a-sphere radius="1" color="#7f8c8d" position="-7 8 5"></a-sphere>
+        <a-sphere radius="1" color="#7f8c8d" position="7 8 -5"></a-sphere>
+        <a-box width="5" height="9" depth="5" color="#b0bec5" position="0 6 0"></a-box>
+        <a-cone radius-bottom="3" height="3" color="#7f8c8d" position="0 9.5 0"></a-cone>
+        <a-cylinder height="1" radius="0.2" color="#616a6b" position="-7 9 5"></a-cylinder>
+        <a-cylinder height="1" radius="0.2" color="#616a6b" position="7 9 -5"></a-cylinder>
+      </a-entity>
+      <a-entity id="mini-tower" scale="0.3 0.3 0.3" position="10 -3 0">
+        <a-box width="7" height="0.6" depth="7" color="#999" position="0 0.3 0"></a-box>
+        <a-box width="5" height="12" depth="5" 
+               material="color: #79bde9; metalness: 0.8; roughness: 0.1; opacity: 0.85"
+               position="0 6.5 0" shadow></a-box>
+        <a-box width="5.5" height="0.4" depth="5.5" color="#cfd8dc" position="0 12.6 0"></a-box>
+        <a-cylinder height="2" radius="0.4" color="#607d8b" position="0 13.7 0"></a-cylinder>
+        <a-sphere radius="0.4" color="#00ffff" position="0 15 0"></a-sphere>
+      </a-entity>
+      <a-entity id="palabras">
+        <!-- Cada palabra con 'look-at' para orientarse a la cámara -->
+        <a-text value="Calcular distancias" color="#002bFF" position="3 3 -10" scale="2 2 2"
+                look-at="#player"></a-text>
+        <a-text value="Verificar áangulos rectos (en construccioón o carpinteríia)"
+                color="#0033FF" position="-8 3 -10" scale="2 2 2"
+                look-at="#player"></a-text>
+        <a-text value="Geometriía plana" color="#0040FF" position="-6 8 -10" scale="2 2 2"
+                look-at="#player"></a-text>
+        <a-text value="Navegacioón" color="#002bFF" position="2 1 -10" scale="2 2 2"
+                look-at="#player"></a-text>
+        <a-text value="Topografiía" color="#002bFF" position="-3 0 -10" scale="2 2 2"
+                look-at="#player"></a-text>
+        <a-text value="Teorema fundamental de la geometriía" color="#0033FF"
+                position="-1.5 8 -10" scale="2 2 2" look-at="#player"></a-text>
+      </a-entity>
+      <a-entity id="greek-temple" rotation="-10 0 0" scale="2 2 2" position="0 -2.5 30">
+        <a-box width="14" height="0.4" depth="12" color="#d8c7a1" position="0 0.2 0"></a-box>
+        <a-box width="12" height="0.4" depth="10" color="#e5d3aa" position="0 0.6 0"></a-box>
+        <a-box width="10" height="0.4" depth="8" color="#f1e3c3" position="0 1 0"></a-box>
+        <a-entity id="columnas">
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="-4.5 3 3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="-2.25 3 3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="0 3 3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="2.25 3 3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="4.5 3 3.5"></a-cylinder>
+          
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="-4.5 3 -3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="-2.25 3 -3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="0 3 -3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="2.25 3 -3.5"></a-cylinder>
+          <a-cylinder height="6" radius="0.25" color="#f2e8cc" position="4.5 3 -3.5"></a-cylinder>
+        </a-entity>
+        <a-box width="10" height="0.5" depth="8" color="#e9ddaf" position="0 6.3 0"></a-box>
+        <a-cone radius-bottom="5.5" height="2.5" color="#cdbf9a" position="0 7.6 0" rotation="0 0 0"></a-cone>
+        <a-sphere radius="0.3" color="#bfa06e" position="-4.5 8.5 0"></a-sphere>
+        <a-sphere radius="0.3" color="#bfa06e" position="4.5 8.5 0"></a-sphere>
+      </a-entity>
+     <a-entity id="sistema-tierra-luna" position="0 2 -150" rotation="0 0 0">
+  
+  <!-- 🌍 Tierra con textura -->
+  <a-sphere
+    radius="100"
+    material="shader: standard; src: https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg; metalness: 0.4; roughness: 0.7;"
+    animation="property: rotation; to: 0 360 0; loop: true; dur: 30000">
+  </a-sphere>
+  
+  <!-- Órbita (contenedor girando la Luna alrededor de la Tierra) -->
+  <a-entity id="orbita-luna"
+    animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
+    
+    <!-- 🌕 Luna (girando alrededor, desplazada del centro) -->
+    <a-sphere
+      position="225 0 0"
+      radius="25"
+      material="shader: standard; src: https://threejs.org/examples/textures/planets/moon_1024.jpg; metalness: 0.2; roughness: 1">
+    </a-sphere>
+
+  </a-entity>
+  
+
+</a-entity>
+               
+    </a-entity>
+    <a-box position="0 -0.7 -3.9" color="#000000" width="6.2" height="1" depth="2" rotation="-40 0 0"></a-box>
+    <!-- Botones para cambiar entorno -->
+    <a-plane class="boton-entorno" position="-2 0 -3" width="1.5" height="0.6" color="#00FF00" rotation="-40 0 0"
+             entorno-switch="target: entorno1; skyColor: #001122"
+             toggle-color-on-hover="hoverColor: #00CC00">
+      <a-text value="Que es?" align="center" color="black" position="0 0 0.1" ></a-text>
+    </a-plane>
+
+    <a-plane class="boton-entorno" position="2 0 -3" width="1.5" height="0.6" color="#FFFF00" rotation="-40 0 0"
+             entorno-switch="target: entorno2; skyColor: #006699"
+             toggle-color-on-hover="hoverColor: #CCCC00">
+      <a-text value="Preguntas" align="center" color="black" position="0 0 0.1"></a-text>
+    </a-plane>
+
+    <a-plane class="boton-entorno" position="0 0 -3"  width="1.9" height="0.6" color="#FF00FF" rotation="-40 0 0"
+             entorno-switch="target: entorno3; skyColor: #000000"
+             toggle-color-on-hover="hoverColor: #CC00CC">
+      <a-text value="Para que sirve?" align="center" color="black" position="0 0 0.1"></a-text>
+    </a-plane>
+
+  </a-scene>
+
+  <!-- Script para activar el modo VR -->
+  <script>
+    document.getElementById('enterVRButton').addEventListener('click', function () {
+      const scene = document.querySelector('a-scene');
+      if (scene && scene.enterVR) {
+        scene.enterVR();
+      } else {
+        alert('Modo VR no disponible en este dispositivo o navegador.');
+      }
+    });
+    
+  </script>
+</body>
+</html>
